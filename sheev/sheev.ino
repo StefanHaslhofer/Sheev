@@ -5,8 +5,8 @@
 
 #define DEBUG_MSG true
 
-const char* ssid     = "Des Kaisers Richtfunk";
-const char* password = "GottbewahredenKaiser";
+const char* ssid     = "...";
+const char* password = "...";
 
 const unsigned int NET_PORT = 58266;
 WiFiUDP Udp;
