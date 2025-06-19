@@ -7,12 +7,12 @@
 #define TOF_ADDR_DIS 0x24 // distance variable address
 
 #define STOP_DIST 200 // allowed min distance to obstacle (in mm)
-#define GO_DIST 300 // distance threshold needed to return to forward movement
+#define GO_DIST 250 // distance threshold needed to return to forward movement
 
 #define MOTOR_SPEED 100
 #define STANDARD_TRN_DUR 750 // turn duration in ms at MOTOR_SPEED = 100
 
-#define DEBUG_MSG true
+#define DEBUG_MSG false
 
 #define SERVO_FW_POS 75
 #define SERVO_START_POS 20
@@ -49,8 +49,7 @@ void setup(){
   Wire.begin();
   Wire.setClock(400000);
 
-  // start in forward movement
-  move(FW);
+  move(FW); // start in forward movement
 
   // servo setup
   servo1.write(SERVO_FW_POS);
@@ -60,41 +59,67 @@ void setup(){
 }
 
 void loop(){
-  uint32_t dist = readDistance();
-
-  drive_vehicle(dist);
+  drive_vehicle();
 
   delay(20);
 }
 
 /**
- * return distance from vehicle to obstacle
+ * state management of vehicle driving direction
  */
-uint32_t readDistance() {
-  // directly return the laser range finding value if the vehicle is moving forward
-  if (currDriveDir == FW) {
-    servo1.write(SERVO_FW_POS);
-    return I2C_read_distance();
+void drive_vehicle() {
+  uint32_t dist; // distance to obstacle
+
+  while((dist = read_distance()) > STOP_DIST) {
+    Serial.print("Move forward: "); Serial.println(dist);
+    if (currDriveDir != FW) {
+      move(FW);
+    }
   }
 
+  if (currDriveDir == FW) {
+    move(HL); // halt vehicle
+    delay(500);
+    rn = random(10); // set random turn direction if forward movement stops 
+  }
+
+  while((dist = read_distance()) < GO_DIST) {
+    delay(250);
+    if (rn > 4) {
+        move(RT);
+        Serial.print("Turn right: "); Serial.println(dist);
+    } else {
+        move(LT);
+        Serial.print("Turn left: "); Serial.println(dist);
+    }
+    delay(turnDuration);
+    move(HL);
+  }
+}
+
+/**
+ * return distance to obstacle
+ */
+uint32_t read_distance() {
   uint32_t dist = 0;
   uint32_t minDist = 0;
   int pos = 0;
 
-  // halt vehicle for distance scan sweep
-  move(HL);
-
   // perform a forward sweep to determine the minimum distance within a wide angle range
-  for (pos = 0; pos <= SERVO_RANGE; pos += 1) {
+  for (pos = SERVO_START_POS; pos <= SERVO_RANGE; pos += 1) {
     // in steps of 1 degree
     servo1.write(pos);              // tell servo to go to position
     delay(3);                       // waits 15ms for the servo to reach the position
   }
 
-  for (pos = SERVO_RANGE; pos >= 0; pos -= 1) {
+  for (pos = SERVO_RANGE; pos >= SERVO_START_POS; pos -= 1) {
     servo1.write(pos);
-    delay(20);
+    delay(5);
     dist = I2C_read_distance();
+
+    if (dist < GO_DIST || dist < STOP_DIST && currDriveDir != FW) {
+      return dist;
+    }
 
     if(minDist == 0 || dist < minDist) {
       minDist = dist;
@@ -102,34 +127,6 @@ uint32_t readDistance() {
   }
 
   return minDist;
-}
-
-/**
- * state management of vehicle driving direction
- *
- * @param dist distance to obstacle
- */
-void drive_vehicle(uint32_t dist) {
-  if(dist > STOP_DIST) {
-    if (currDriveDir != FW) {
-      move(FW);
-    }
-  } else {
-    if (currDriveDir == FW) {
-      // halt vehicle
-      move(HL);
-      delay(500);
-      // set random turn direction if forward movement stops 
-      rn = random(2);
-    }
-  
-    if (rn == 1) {
-      move(RT);
-    } else {
-      move(LT);
-    }
-    delay(turnDuration);
-  }
 }
 
 /*
