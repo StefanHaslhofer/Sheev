@@ -1,4 +1,4 @@
-package com.example.sheevvision
+package com.sheev.sheev_vision
 
 import org.junit.Test
 

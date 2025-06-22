@@ -19,6 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SheevVision"
+rootProject.name = "sheev_vision"
 include(":app")
- 
