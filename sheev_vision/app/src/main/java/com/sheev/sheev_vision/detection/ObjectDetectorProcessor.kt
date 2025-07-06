@@ -1,6 +1,10 @@
 package com.sheev.sheev_vision.detection
 
+import android.graphics.Color
+import android.graphics.Matrix
+import android.media.Image
 import android.util.Log
+import android.util.Size
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -12,7 +16,8 @@ import com.google.mlkit.vision.objects.ObjectDetectorOptionsBase
 
 class ObjectDetectorProcessor(
     options: ObjectDetectorOptionsBase,
-    private val boundingBoxView: BoundingBoxView
+    private val boundingBoxView: BoundingBoxView,
+    private val displaySize: Size
 ) : ImageAnalysis.Analyzer {
 
     private val objectDetector = ObjectDetection.getClient(options)
@@ -20,13 +25,21 @@ class ObjectDetectorProcessor(
     @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
+
         if (mediaImage != null) {
-            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            val scaleMatrix = getInputImageScale(mediaImage)
+
+            val image = InputImage.fromMediaImage(
+                mediaImage,
+                imageProxy.imageInfo.rotationDegrees,
+                scaleMatrix
+            )
+
             objectDetector.process(image)
                 .addOnSuccessListener { detectedObjects ->
                     Log.d(TAG, "image processing successful")
 
-                    processDetectedObjects(detectedObjects)
+                    processDetectedObjects(detectedObjects, mediaImage)
                     imageProxy.close()
                 }
                 .addOnFailureListener { e ->
@@ -37,7 +50,18 @@ class ObjectDetectorProcessor(
         }
     }
 
-    private fun processDetectedObjects(detectedObjects: List<DetectedObject>) {
+    private fun getInputImageScale(img: Image): Matrix {
+        // Calculate scale factors
+        val scaleX = displaySize.width.toFloat() / img.height
+        val scaleY = displaySize.height.toFloat() / img.width
+
+        // Create transformation matrix
+        return Matrix().apply {
+            postScale(scaleX, scaleY)
+        }
+    }
+
+    private fun processDetectedObjects(detectedObjects: List<DetectedObject>, mediaImage: Image) {
         val boundingBoxes = detectedObjects.map { detectedObject ->
             val boundingBox = detectedObject.boundingBox
             val trackingId = detectedObject.trackingId
@@ -46,8 +70,14 @@ class ObjectDetectorProcessor(
                 val index = label.index
                 val confidence = label.confidence
             }
-            BoundingBoxView.BoundingBox(detectedObject.boundingBox, "test")
-        }
+            BoundingBoxView.BoundingBox(
+                detectedObject.boundingBox,
+                Color.RED,
+                "test",
+                3.0f,
+                detectedObject.trackingId
+            )
+        }.toMutableList()
 
         boundingBoxView.setBoundingBoxes(boundingBoxes)
     }
