@@ -52,6 +52,7 @@ class ObjectDetectorProcessor(
 
     private fun getInputImageScale(img: Image): Matrix {
         // Calculate scale factors
+        // Image width and height values are inverted
         val scaleX = displaySize.width.toFloat() / img.height
         val scaleY = displaySize.height.toFloat() / img.width
 

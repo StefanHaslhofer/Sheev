@@ -25,9 +25,19 @@ class BoundingBoxView(context: Context) : View(context) {
             style = Paint.Style.STROKE
             strokeWidth = 8f
             isAntiAlias = true
+            textSize = 48f
         }
 
         canvas.drawRect(box.rect, paint)
+
+        paint.strokeWidth = 4f
+
+        canvas.drawText(
+            "${box.id}: TEST",
+            box.rect.left.toFloat(),
+            box.rect.top.toFloat() - MARGIN,
+            paint
+        )
     }
 
     fun setBoundingBoxes(boxes: List<BoundingBox>) {
@@ -43,4 +53,8 @@ class BoundingBoxView(context: Context) : View(context) {
         val confidence: Float?,
         val id: Int?
     )
+
+    companion object {
+        private const val MARGIN = 8f
+    }
 }

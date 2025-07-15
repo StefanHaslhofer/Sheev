@@ -36,6 +36,7 @@ android {
     }
     buildFeatures {
         compose = true
+        mlModelBinding = true
     }
     viewBinding {
         enable = true
@@ -60,6 +61,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.material)
     implementation(libs.mlkit.object1.detection)
+    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow.lite.metadata)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
