@@ -9,15 +9,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import com.sheev.sheev_vision.databinding.ActivityMainBinding
-import com.sheev.sheev_vision.detection.BoundingBoxView
+import com.sheev.sheev_vision.detection.LandmarkOverlayView
 import com.sheev.sheev_vision.detection.ObjectDetectorProcessor
 import com.sheev.sheev_vision.udp.UdpSocketListener
 import kotlinx.coroutines.Dispatchers
@@ -28,11 +29,10 @@ import java.util.concurrent.Executors
 
 
 class MainActivity : ComponentActivity() {
-
     private lateinit var binding: ActivityMainBinding
     private lateinit var udpListener: UdpSocketListener
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var boundingBoxView: BoundingBoxView
+    private lateinit var landmarkOverlayView: LandmarkOverlayView
     // private lateinit var broadcastMsgAdapter: ArrayAdapter<String>
 
     private val activityResultLauncher =
@@ -65,8 +65,8 @@ class MainActivity : ComponentActivity() {
         // val listView: ListView = findViewById(R.id.broadcast_msg_view)
         // listView.adapter = broadcastMsgAdapter
 
-        boundingBoxView = BoundingBoxView(this)
-        view.addView(boundingBoxView)
+        landmarkOverlayView = LandmarkOverlayView(this)
+        view.addView(landmarkOverlayView)
 
         // 👂 Listen for UDP broadcasts
         startListening()
@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
             val preview = Preview.Builder()
+                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
                 .build()
                 .also {
                     it.setSurfaceProvider(binding.previewContainer.surfaceProvider)
@@ -91,14 +92,13 @@ class MainActivity : ComponentActivity() {
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             // 🕵️‍♀️ Setup object detection
-            val options = ObjectDetectorOptions.Builder()
-                .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
-                .enableClassification()
+            val options = PoseDetectorOptions.Builder()
+                .setDetectorMode(PoseDetectorOptions.STREAM_MODE)
                 .build()
 
             // 🔎 Set image analyzer
             val imageAnalyzer = ImageAnalysis.Builder()
-                .setTargetResolution(Size(480, 640))
+                .setTargetResolution(Size(720, 1280))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also {
@@ -106,8 +106,8 @@ class MainActivity : ComponentActivity() {
                         cameraExecutor,
                         ObjectDetectorProcessor(
                             options,
-                            boundingBoxView,
-                            Size(boundingBoxView.width, boundingBoxView.height)
+                            landmarkOverlayView,
+                            Size(binding.previewContainer.width, binding.previewContainer.height)
                         )
                     )
                 }

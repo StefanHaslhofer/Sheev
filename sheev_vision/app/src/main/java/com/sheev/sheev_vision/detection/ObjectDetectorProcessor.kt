@@ -1,7 +1,6 @@
 package com.sheev.sheev_vision.detection
 
 import android.graphics.Color
-import android.graphics.Matrix
 import android.media.Image
 import android.util.Log
 import android.util.Size
@@ -10,36 +9,35 @@ import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.objects.DetectedObject
-import com.google.mlkit.vision.objects.ObjectDetection
-import com.google.mlkit.vision.objects.ObjectDetectorOptionsBase
+import com.google.mlkit.vision.pose.Pose
+import com.google.mlkit.vision.pose.PoseDetection
+import com.google.mlkit.vision.pose.PoseDetectorOptionsBase
+import com.google.mlkit.vision.pose.PoseLandmark
 
 class ObjectDetectorProcessor(
-    options: ObjectDetectorOptionsBase,
-    private val boundingBoxView: BoundingBoxView,
-    private val displaySize: Size
+    options: PoseDetectorOptionsBase,
+    private val landmarkOverlayView: LandmarkOverlayView,
+    private val previewSize: Size
 ) : ImageAnalysis.Analyzer {
 
-    private val objectDetector = ObjectDetection.getClient(options)
+    private val poseDetector = PoseDetection.getClient(options)
 
     @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
 
         if (mediaImage != null) {
-            val scaleMatrix = getInputImageScale(mediaImage)
 
             val image = InputImage.fromMediaImage(
                 mediaImage,
-                imageProxy.imageInfo.rotationDegrees,
-                scaleMatrix
+                imageProxy.imageInfo.rotationDegrees
             )
 
-            objectDetector.process(image)
-                .addOnSuccessListener { detectedObjects ->
+            poseDetector.process(image)
+                .addOnSuccessListener { result ->
                     Log.d(TAG, "image processing successful")
 
-                    processDetectedObjects(detectedObjects, mediaImage)
+                    processDetectedObjects(result, mediaImage)
                     imageProxy.close()
                 }
                 .addOnFailureListener { e ->
@@ -50,37 +48,36 @@ class ObjectDetectorProcessor(
         }
     }
 
-    private fun getInputImageScale(img: Image): Matrix {
-        // Calculate scale factors
-        // Image width and height values are inverted
-        val scaleX = displaySize.width.toFloat() / img.height
-        val scaleY = displaySize.height.toFloat() / img.width
+    private fun processDetectedObjects(pose: Pose, mediaImage: Image) {
+        val leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
+        val rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)
+        val leftHip = pose.getPoseLandmark(PoseLandmark.LEFT_HIP)
+        val rightHip = pose.getPoseLandmark(PoseLandmark.RIGHT_HIP)
 
-        // Create transformation matrix
-        return Matrix().apply {
-            postScale(scaleX, scaleY)
-        }
-    }
-
-    private fun processDetectedObjects(detectedObjects: List<DetectedObject>, mediaImage: Image) {
-        val boundingBoxes = detectedObjects.map { detectedObject ->
-            val boundingBox = detectedObject.boundingBox
-            val trackingId = detectedObject.trackingId
-            for (label in detectedObject.labels) {
-                val text = label.text
-                val index = label.index
-                val confidence = label.confidence
-            }
-            BoundingBoxView.BoundingBox(
-                detectedObject.boundingBox,
-                Color.RED,
-                "test",
-                3.0f,
-                detectedObject.trackingId
+        val landmarks = if (rightShoulder != null && leftShoulder != null) {
+            listOf(
+                LandmarkOverlayView.PoseLandmark(
+                    rightShoulder.position.x * previewSize.width.toFloat() / mediaImage.height,
+                    rightShoulder.position.y * previewSize.height.toFloat() / mediaImage.width,
+                    Color.RED,
+                    "RS",
+                    3.0f,
+                    1
+                ),
+                LandmarkOverlayView.PoseLandmark(
+                    leftShoulder.position.x * previewSize.width.toFloat() / mediaImage.height,
+                    leftShoulder.position.y * previewSize.height.toFloat() / mediaImage.width,
+                    Color.RED,
+                    "LS",
+                    3.0f,
+                    2
+                )
             )
-        }.toMutableList()
+        } else {
+            emptyList()
+        }
 
-        boundingBoxView.setBoundingBoxes(boundingBoxes)
+        landmarkOverlayView.setPoseLandemarks(landmarks)
     }
 
     companion object {

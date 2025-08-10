@@ -3,51 +3,51 @@ package com.sheev.sheev_vision.detection
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Rect
 import android.view.View
 
-class BoundingBoxView(context: Context) : View(context) {
+class LandmarkOverlayView(context: Context) : View(context) {
 
-    private val boundingBoxes = mutableListOf<BoundingBox>()
+    private val poseLandmarks = mutableListOf<PoseLandmark>()
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        boundingBoxes.forEach { box -> drawBoundingBox(canvas, box) }
+        poseLandmarks.forEach { box -> drawPoseLandmark(canvas, box) }
     }
 
-    private fun drawBoundingBox(
+    private fun drawPoseLandmark(
         canvas: Canvas,
-        box: BoundingBox
+        pl: PoseLandmark
     ) {
         val paint = Paint().apply {
-            color = box.color
+            color = pl.color
             style = Paint.Style.STROKE
             strokeWidth = 8f
             isAntiAlias = true
             textSize = 48f
         }
 
-        canvas.drawRect(box.rect, paint)
+        canvas.drawCircle(pl.x.toFloat(), pl.y.toFloat(), 6f, paint)
 
         paint.strokeWidth = 4f
 
         canvas.drawText(
-            "${box.id}: TEST",
-            box.rect.left.toFloat(),
-            box.rect.top.toFloat() - MARGIN,
+            "${pl.id}: ${pl.label}",
+            pl.x.toFloat(),
+            pl.y.toFloat() - MARGIN,
             paint
         )
     }
 
-    fun setBoundingBoxes(boxes: List<BoundingBox>) {
-        boundingBoxes.clear()
-        boundingBoxes.addAll(boxes)
+    fun setPoseLandemarks(boxes: List<PoseLandmark>) {
+        poseLandmarks.clear()
+        poseLandmarks.addAll(boxes)
         invalidate()
     }
 
-    data class BoundingBox(
-        val rect: Rect,
+    data class PoseLandmark(
+        val x: Float,
+        val y: Float,
         val color: Int,
         val label: String?,
         val confidence: Float?,

@@ -5,6 +5,6 @@
 
     <androidx.camera.view.PreviewView
         android:id="@+id/preview_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_width="720px"
+        android:layout_height="1280px" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
