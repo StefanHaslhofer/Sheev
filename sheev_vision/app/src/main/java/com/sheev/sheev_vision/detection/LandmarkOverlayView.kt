@@ -29,14 +29,16 @@ class LandmarkOverlayView(context: Context) : View(context) {
 
         canvas.drawCircle(pl.x.toFloat(), pl.y.toFloat(), 6f, paint)
 
-        paint.strokeWidth = 4f
-
-        canvas.drawText(
-            "${pl.id}: ${pl.label}",
-            pl.x.toFloat(),
-            pl.y.toFloat() - MARGIN,
-            paint
-        )
+        if (TEXT_ENABLED) {
+            paint.strokeWidth = 4f
+            
+            canvas.drawText(
+                "${pl.id}: ${pl.label}",
+                pl.x.toFloat(),
+                pl.y.toFloat() - MARGIN,
+                paint
+            )
+        }
     }
 
     fun setPoseLandemarks(boxes: List<PoseLandmark>) {
@@ -56,5 +58,6 @@ class LandmarkOverlayView(context: Context) : View(context) {
 
     companion object {
         private const val MARGIN = 8f
+        private const val TEXT_ENABLED = false
     }
 }

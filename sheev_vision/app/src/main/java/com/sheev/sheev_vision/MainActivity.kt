@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.view.Gravity
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,6 +15,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
@@ -66,6 +68,9 @@ class MainActivity : ComponentActivity() {
         // listView.adapter = broadcastMsgAdapter
 
         landmarkOverlayView = LandmarkOverlayView(this)
+        val layoutParams = CoordinatorLayout.LayoutParams(720, 1280)
+        layoutParams.gravity = Gravity.CENTER
+        landmarkOverlayView.layoutParams = layoutParams
         view.addView(landmarkOverlayView)
 
         // 👂 Listen for UDP broadcasts
