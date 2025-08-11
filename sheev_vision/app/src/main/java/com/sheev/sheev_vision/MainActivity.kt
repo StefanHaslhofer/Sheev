@@ -119,9 +119,10 @@ class MainActivity : ComponentActivity() {
 
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
+                val camera = cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview, imageAnalyzer
                 )
+                camera.cameraControl.setLinearZoom(0f)
             } catch (exc: Exception) {
                 Log.e(TAG, "Camera binding failed", exc)
             }
