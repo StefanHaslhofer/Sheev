@@ -48,9 +48,31 @@ class ObjectDetectorProcessor(
     }
 
     /**
-     * paint body parts in landmarkOverlayView
+     * Determine the position of a detected body relative to defined boundaries.
+     *
+     * @return Position indicator:
+     *   - 0 if the detected body is to the left of the left boundary
+     *   - 1 if the detected body is within the boundaries
+     *   - 2 if the detected body is to the right of the right boundary
      */
-    private fun processBody(pose: Pose, mediaImage: Image) {
+    private fun checkBoundaries(poseLandmarks: List<LandmarkOverlayView.PoseLandmark>): Int {
+        for (pl in poseLandmarks) {
+            if (pl.y > actionBorderOverlayView.leftBorder.endY) {
+                return 0
+            }
+
+            if (pl.y < actionBorderOverlayView.rightBorder.endY) {
+                return 2
+            }
+        }
+
+        return 1
+    }
+
+    /**
+     * Paint body parts in landmarkOverlayView and call boundary check
+     */
+    private fun processBody(pose: Pose, mediaImage: Image): Int {
         // head
         val nose = pose.getPoseLandmark(PoseLandmark.NOSE)
         // upper body
@@ -120,6 +142,8 @@ class ObjectDetectorProcessor(
             }
 
         landmarkOverlayView.setPoseLandemarks(landmarks)
+
+        return if (!landmarks.isEmpty()) checkBoundaries(landmarks) else 1
     }
 
     companion object {

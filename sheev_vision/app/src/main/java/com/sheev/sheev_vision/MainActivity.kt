@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
      * ✏️ Init action borders in view
      */
     private fun initActionBorders(prevHeight: Float, prevWidth: Float) {
-        val leftBorder =
+        val rightBorder =
             ActionBorder(
                 0f,
                 prevHeight / 4,
@@ -154,7 +154,7 @@ class MainActivity : ComponentActivity() {
                 prevHeight / 4
             )
 
-        val rightBorder = ActionBorder(
+        val leftBorder = ActionBorder(
             0f,
             prevHeight / 4 * 3,
             prevWidth,
