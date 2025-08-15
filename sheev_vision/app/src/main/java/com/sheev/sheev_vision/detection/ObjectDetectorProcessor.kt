@@ -3,7 +3,6 @@ package com.sheev.sheev_vision.detection
 import android.graphics.Color
 import android.media.Image
 import android.util.Log
-import android.util.Size
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -17,7 +16,7 @@ import com.google.mlkit.vision.pose.PoseLandmark
 class ObjectDetectorProcessor(
     options: PoseDetectorOptionsBase,
     private val landmarkOverlayView: LandmarkOverlayView,
-    private val previewSize: Size
+    private val actionBorderOverlayView: ActionBorderOverlayView,
 ) : ImageAnalysis.Analyzer {
 
     private val poseDetector = PoseDetection.getClient(options)

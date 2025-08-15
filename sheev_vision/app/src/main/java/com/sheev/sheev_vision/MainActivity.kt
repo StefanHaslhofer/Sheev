@@ -20,6 +20,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import com.sheev.sheev_vision.databinding.ActivityMainBinding
+import com.sheev.sheev_vision.detection.ActionBorderOverlayView
+import com.sheev.sheev_vision.detection.ActionBorderOverlayView.ActionBorder
 import com.sheev.sheev_vision.detection.LandmarkOverlayView
 import com.sheev.sheev_vision.detection.ObjectDetectorProcessor
 import com.sheev.sheev_vision.udp.UdpSocketListener
@@ -35,6 +37,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var udpListener: UdpSocketListener
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var landmarkOverlayView: LandmarkOverlayView
+    private lateinit var actionBorderOverlayView: ActionBorderOverlayView
     // private lateinit var broadcastMsgAdapter: ArrayAdapter<String>
 
     private val activityResultLauncher =
@@ -66,12 +69,16 @@ class MainActivity : ComponentActivity() {
         // broadcastMsgAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, messages)
         // val listView: ListView = findViewById(R.id.broadcast_msg_view)
         // listView.adapter = broadcastMsgAdapter
-
-        landmarkOverlayView = LandmarkOverlayView(this)
         val layoutParams = CoordinatorLayout.LayoutParams(720, 1280)
         layoutParams.gravity = Gravity.CENTER
+
+        landmarkOverlayView = LandmarkOverlayView(this)
         landmarkOverlayView.layoutParams = layoutParams
         view.addView(landmarkOverlayView)
+
+        actionBorderOverlayView = ActionBorderOverlayView(this)
+        actionBorderOverlayView.layoutParams = layoutParams
+        view.addView(actionBorderOverlayView)
 
         // 👂 Listen for UDP broadcasts
         startListening()
@@ -101,6 +108,11 @@ class MainActivity : ComponentActivity() {
                 .setDetectorMode(PoseDetectorOptions.STREAM_MODE)
                 .build()
 
+            initActionBorders(
+                binding.previewContainer.height.toFloat(),
+                binding.previewContainer.width.toFloat()
+            )
+
             // 🔎 Set image analyzer
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setTargetResolution(Size(720, 1280))
@@ -112,7 +124,7 @@ class MainActivity : ComponentActivity() {
                         ObjectDetectorProcessor(
                             options,
                             landmarkOverlayView,
-                            Size(binding.previewContainer.width, binding.previewContainer.height)
+                            actionBorderOverlayView
                         )
                     )
                 }
@@ -128,6 +140,28 @@ class MainActivity : ComponentActivity() {
             }
 
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    /**
+     * ✏️ Init action borders in view
+     */
+    private fun initActionBorders(prevHeight: Float, prevWidth: Float) {
+        val leftBorder =
+            ActionBorder(
+                0f,
+                prevHeight / 4,
+                prevWidth,
+                prevHeight / 4
+            )
+
+        val rightBorder = ActionBorder(
+            0f,
+            prevHeight / 4 * 3,
+            prevWidth,
+            prevHeight / 4 * 3
+        )
+
+        actionBorderOverlayView.setBorders(leftBorder, rightBorder)
     }
 
     private fun startListening() {
