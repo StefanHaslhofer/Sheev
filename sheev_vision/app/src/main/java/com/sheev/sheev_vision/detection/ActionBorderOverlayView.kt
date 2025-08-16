@@ -9,27 +9,38 @@ import android.view.View
 class ActionBorderOverlayView(context: Context) : View(context) {
     lateinit var leftBorder: ActionBorder
     lateinit var rightBorder: ActionBorder
+    lateinit var leftInnerBorder: ActionBorder
+    lateinit var rightInnerBorder: ActionBorder
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        drawActionBorders(canvas, leftBorder)
-        drawActionBorders(canvas, rightBorder)
+        drawActionBorders(canvas, leftBorder, PAINT)
+        drawActionBorders(canvas, rightBorder, PAINT)
+        drawActionBorders(canvas, leftInnerBorder, PAINT_INNER)
+        drawActionBorders(canvas, rightInnerBorder, PAINT_INNER)
     }
 
-    fun setBorders(leftBorder: ActionBorder, rightBorder: ActionBorder) {
+    fun setBorders(
+        leftBorder: ActionBorder,
+        rightBorder: ActionBorder,
+        leftInnerBorder: ActionBorder,
+        rightInnerBorder: ActionBorder
+    ) {
         this.leftBorder = leftBorder
         this.rightBorder = rightBorder
+        this.leftInnerBorder = leftInnerBorder
+        this.rightInnerBorder = rightInnerBorder
         invalidate()
     }
 
-    private fun drawActionBorders(canvas: Canvas, border: ActionBorder) {
+    private fun drawActionBorders(canvas: Canvas, border: ActionBorder, paint: Paint) {
         canvas.drawLine(
             border.startX,
             border.startY,
             border.endX,
             border.endY,
-            PAINT
+            paint
         )
     }
 
@@ -43,6 +54,13 @@ class ActionBorderOverlayView(context: Context) : View(context) {
     companion object {
         private val PAINT = Paint().apply {
             color = Color.BLUE
+            style = Paint.Style.STROKE
+            strokeWidth = 8f
+            isAntiAlias = true
+        }
+
+        private val PAINT_INNER = Paint().apply {
+            color = Color.CYAN
             style = Paint.Style.STROKE
             strokeWidth = 8f
             isAntiAlias = true

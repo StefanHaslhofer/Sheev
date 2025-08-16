@@ -19,6 +19,8 @@ class ObjectDetectorProcessor(
     private val actionBorderOverlayView: ActionBorderOverlayView,
 ) : ImageAnalysis.Analyzer {
 
+    var positionIndicator = 1
+
     private val poseDetector = PoseDetection.getClient(options)
 
     @OptIn(ExperimentalGetImage::class)
@@ -34,10 +36,11 @@ class ObjectDetectorProcessor(
 
             poseDetector.process(image)
                 .addOnSuccessListener { result ->
-                    Log.d(TAG, "image processing successful")
-
-                    processBody(result, mediaImage)
+                    positionIndicator = processBody(result, mediaImage)
+                    Log.d(TAG, positionIndicator.toString())
                     imageProxy.close()
+
+                    // TODO send positionIndicator to arduino
                 }
                 .addOnFailureListener { e ->
                     Log.e(TAG, e.toString())
@@ -64,9 +67,15 @@ class ObjectDetectorProcessor(
             if (pl.y < actionBorderOverlayView.rightBorder.endY) {
                 return 2
             }
+
+            if (positionIndicator == 0 && pl.y < actionBorderOverlayView.leftInnerBorder.endY ||
+                positionIndicator == 2 && pl.y > actionBorderOverlayView.rightInnerBorder.endY
+            ) {
+                return 1
+            }
         }
 
-        return 1
+        return positionIndicator
     }
 
     /**

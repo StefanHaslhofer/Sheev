@@ -146,22 +146,42 @@ class MainActivity : ComponentActivity() {
      * ✏️ Init action borders in view
      */
     private fun initActionBorders(prevHeight: Float, prevWidth: Float) {
+        val leftBorder = ActionBorder(
+            0f,
+            prevHeight / 5 * 4,
+            prevWidth,
+            prevHeight / 5 * 4
+        )
+
         val rightBorder =
             ActionBorder(
                 0f,
-                prevHeight / 4,
+                prevHeight / 5,
                 prevWidth,
-                prevHeight / 4
+                prevHeight / 5
             )
 
-        val leftBorder = ActionBorder(
+        val leftInnerBorder = ActionBorder(
             0f,
-            prevHeight / 4 * 3,
+            prevHeight / 5 * 3,
             prevWidth,
-            prevHeight / 4 * 3
+            prevHeight / 5 * 3
         )
 
-        actionBorderOverlayView.setBorders(leftBorder, rightBorder)
+        val rightInnerBorder =
+            ActionBorder(
+                0f,
+                prevHeight / 5 * 2,
+                prevWidth,
+                prevHeight / 5 * 2
+            )
+
+        actionBorderOverlayView.setBorders(
+            leftBorder,
+            rightBorder,
+            leftInnerBorder,
+            rightInnerBorder
+        )
     }
 
     private fun startListening() {
