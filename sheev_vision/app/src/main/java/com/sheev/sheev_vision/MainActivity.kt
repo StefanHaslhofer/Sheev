@@ -1,6 +1,15 @@
 package com.sheev.sheev_vision
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbDeviceConnection
+import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -18,6 +27,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.felhr.usbserial.UsbSerialDevice
+import com.felhr.usbserial.UsbSerialInterface
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import com.sheev.sheev_vision.databinding.ActivityMainBinding
 import com.sheev.sheev_vision.detection.ActionBorderOverlayView
@@ -38,7 +49,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var landmarkOverlayView: LandmarkOverlayView
     private lateinit var actionBorderOverlayView: ActionBorderOverlayView
+
     // private lateinit var broadcastMsgAdapter: ArrayAdapter<String>
+    private lateinit var usbManager: UsbManager
+    private var usbDevice: UsbDevice? = null
+    private var usbSerialDevice: UsbSerialDevice? = null
+    private var usbConnection: UsbDeviceConnection? = null
 
     private val activityResultLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
@@ -54,6 +70,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +80,15 @@ class MainActivity : ComponentActivity() {
         setContentView(view)
 
         requestPermissions()
+
+        usbManager = getSystemService(USB_SERVICE) as UsbManager
+        val filter = IntentFilter()
+        filter.addAction(ACTION_USB_PERMISSION)
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+        filter.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED)
+        registerReceiver(broadcastReceiver, filter)
+        initUsbConnection()
+        sendDate("0")
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
@@ -84,6 +110,81 @@ class MainActivity : ComponentActivity() {
         startListening()
 
         startCamera()
+    }
+
+    // Source: https://github.com/appsinthesky/Kotlin-Serial-Usb
+    private val broadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action!! == ACTION_USB_PERMISSION) {
+                val granted = intent.extras!!.getBoolean(UsbManager.EXTRA_PERMISSION_GRANTED)
+                if (granted) {
+                    usbConnection = usbManager.openDevice(usbDevice)
+                    usbSerialDevice =
+                        UsbSerialDevice.createUsbSerialDevice(usbDevice, usbConnection)
+                    // 🪛 Configure usb serial device
+                    if (usbSerialDevice != null) {
+                        if (usbSerialDevice!!.open()) {
+                            usbSerialDevice!!.setBaudRate(9600)
+                            usbSerialDevice!!.setDataBits(UsbSerialInterface.DATA_BITS_8)
+                            usbSerialDevice!!.setStopBits(UsbSerialInterface.STOP_BITS_1)
+                            usbSerialDevice!!.setParity(UsbSerialInterface.PARITY_NONE)
+                            usbSerialDevice!!.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF)
+                        } else {
+                            Log.d(TAG, "serial port not open")
+                        }
+                    } else {
+                        Log.d(TAG, "port is null")
+                    }
+                } else {
+                    Log.d(TAG, "serial permission not granted")
+                }
+            } else if (intent.action == UsbManager.ACTION_USB_ACCESSORY_ATTACHED) {
+                initUsbConnection()
+            } else if (intent.action == UsbManager.ACTION_USB_ACCESSORY_DETACHED) {
+                disconnectUsbConnection()
+            }
+        }
+    }
+
+    private fun initUsbConnection() {
+        val usbDevices: HashMap<String, UsbDevice>? = usbManager.deviceList
+        if (!usbDevices?.isEmpty()!!) {
+            var keep = true
+            usbDevices.forEach { e ->
+                usbDevice = e.value
+                val deviceVendorId: Int? = usbDevice?.vendorId
+                Log.d(TAG, "vendorId: ${deviceVendorId}")
+                // TODO use correct vendorId
+                if (deviceVendorId == 2431) {
+                    val intent: PendingIntent =
+                        PendingIntent.getBroadcast(
+                            this, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE
+                        )
+                    usbManager.requestPermission(usbDevice, intent)
+                    keep = false
+                    Log.d(TAG, "connection successful")
+                } else {
+                    usbConnection = null
+                    usbDevice = null
+                    Log.d(TAG, "unable to connect")
+                }
+
+                if (!keep) {
+                    return
+                }
+            }
+        } else {
+            Log.d(TAG, "no usb device connected")
+        }
+    }
+
+    private fun sendDate(input: String) {
+        usbSerialDevice?.write(input.toByteArray())
+        Log.d(TAG, "sending data: ${input.toByteArray()}")
+    }
+
+    private fun disconnectUsbConnection() {
+        usbSerialDevice?.close()
     }
 
     private fun startCamera() {
@@ -211,5 +312,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "SheevVision"
+        private const val ACTION_USB_PERMISSION = "permission"
     }
 }

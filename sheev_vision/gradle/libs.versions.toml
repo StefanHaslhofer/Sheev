@@ -14,6 +14,7 @@ objectDetectionVersion = "17.0.2"
 poseDetection = "18.0.0-beta5"
 tensorflowLiteSupport = "0.1.0"
 tensorflowLiteMetadata = "0.1.0"
+usbserialVersion = "6.1.0"
 
 [libraries]
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCore" }
@@ -23,6 +24,7 @@ androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", versi
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraCore" }
 androidx-camera-video = { module = "androidx.camera:camera-video", version.ref = "cameraCore" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+felhr85-usbserial = { module = "com.github.felHR85:UsbSerial", version.ref = "usbserialVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
