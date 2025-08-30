@@ -1,6 +1,7 @@
 #include <AFMotor.h>
 #include "Wire.h"
 #include <Servo.h>
+#include <stdint.h>
 
 #define ADDR_SLAVE 0x08 // 7-bit slave address=ID+0x08 ID=0
 #define REGISTER_TOTAL_SIZE 48 // total length of all registers
@@ -38,7 +39,7 @@ long rn;
 int turnDuration;
 
 void setup(){
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   // DC motor setup
   m1.setSpeed(MOTOR_SPEED);
@@ -83,7 +84,7 @@ void drive_vehicle() {
     rn = random(10); // set random turn direction if forward movement stops 
   }
 
-  while((dist = read_distance()) < GO_DIST) {
+  while((dist = read_distance()) < GO_DIST && dist > 0) {
     delay(250);
     if (rn > 4) {
         move(RT);
@@ -102,7 +103,7 @@ void drive_vehicle() {
  */
 uint32_t read_distance() {
   uint32_t dist = 0;
-  uint32_t minDist = 0;
+  uint32_t minDist = UINT32_MAX;
   int pos = 0;
 
   // perform a forward sweep to determine the minimum distance within a wide angle range

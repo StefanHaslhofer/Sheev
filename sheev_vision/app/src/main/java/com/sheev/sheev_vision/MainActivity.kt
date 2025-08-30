@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("MutableImplicitPendingIntent")
     private fun initUsbConnection() {
         val usbDevices: HashMap<String, UsbDevice>? = usbManager.deviceList
         if (!usbDevices?.isEmpty()!!) {
@@ -154,11 +155,11 @@ class MainActivity : ComponentActivity() {
                 usbDevice = e.value
                 val deviceVendorId: Int? = usbDevice?.vendorId
                 Log.d(TAG, "vendorId: ${deviceVendorId}")
-                // TODO use correct vendorId
-                if (deviceVendorId == 2431) {
+                
+                if (deviceVendorId != null) {
                     val intent: PendingIntent =
                         PendingIntent.getBroadcast(
-                            this, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE
+                            this, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE
                         )
                     usbManager.requestPermission(usbDevice, intent)
                     keep = false
