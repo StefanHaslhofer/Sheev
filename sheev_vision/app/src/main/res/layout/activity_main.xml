@@ -3,6 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <ListView
+        android:id="@+id/broadcast_msg_view"
+        android:layout_width="match_parent"
+        android:layout_height="122dp" />
+
     <androidx.camera.view.PreviewView
         android:id="@+id/preview_container"
         android:layout_width="720px"

@@ -15,6 +15,8 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.view.Gravity
+import android.widget.ArrayAdapter
+import android.widget.ListView
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +39,7 @@ import com.sheev.sheev_vision.detection.LandmarkOverlayView
 import com.sheev.sheev_vision.detection.ObjectDetectorProcessor
 import com.sheev.sheev_vision.udp.UdpSocketListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ExecutorService
@@ -50,11 +53,14 @@ class MainActivity : ComponentActivity() {
     private lateinit var landmarkOverlayView: LandmarkOverlayView
     private lateinit var actionBorderOverlayView: ActionBorderOverlayView
 
-    // private lateinit var broadcastMsgAdapter: ArrayAdapter<String>
+    private lateinit var broadcastMsgAdapter: ArrayAdapter<String>
     private lateinit var usbManager: UsbManager
     private var usbDevice: UsbDevice? = null
     private var usbSerialDevice: UsbSerialDevice? = null
     private var usbConnection: UsbDeviceConnection? = null
+
+    private var messages = mutableListOf<String>()
+
 
     private val activityResultLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
@@ -88,13 +94,10 @@ class MainActivity : ComponentActivity() {
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED)
         registerReceiver(broadcastReceiver, filter)
         initUsbConnection()
-        sendDate("0")
+        sendData("0")
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        // broadcastMsgAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, messages)
-        // val listView: ListView = findViewById(R.id.broadcast_msg_view)
-        // listView.adapter = broadcastMsgAdapter
         val layoutParams = CoordinatorLayout.LayoutParams(720, 1280)
         layoutParams.gravity = Gravity.CENTER
 
@@ -107,14 +110,22 @@ class MainActivity : ComponentActivity() {
         view.addView(actionBorderOverlayView)
 
         // 👂 Listen for UDP broadcasts
-        startListening()
+        // startListening()
 
         startCamera()
+
+        broadcastMsgAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, messages)
+        val listView: ListView = findViewById(R.id.broadcast_msg_view)
+        listView.adapter = broadcastMsgAdapter
     }
 
     // Source: https://github.com/appsinthesky/Kotlin-Serial-Usb
     private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
+        override fun onReceive(context: Context, intent: Intent?) {
+
+            messages.add(intent?.action!!)
+            broadcastMsgAdapter.notifyDataSetChanged()
+
             if (intent?.action!! == ACTION_USB_PERMISSION) {
                 val granted = intent.extras!!.getBoolean(UsbManager.EXTRA_PERMISSION_GRANTED)
                 if (granted) {
@@ -131,16 +142,22 @@ class MainActivity : ComponentActivity() {
                             usbSerialDevice!!.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF)
                         } else {
                             Log.d(TAG, "serial port not open")
+                            messages.add("serial port not open")
+                            broadcastMsgAdapter.notifyDataSetChanged()
                         }
                     } else {
                         Log.d(TAG, "port is null")
+                        messages.add("port is null")
+                        broadcastMsgAdapter.notifyDataSetChanged()
                     }
                 } else {
                     Log.d(TAG, "serial permission not granted")
+                    messages.add("serial permission not granted")
+                    broadcastMsgAdapter.notifyDataSetChanged()
                 }
-            } else if (intent.action == UsbManager.ACTION_USB_ACCESSORY_ATTACHED) {
+            } else if (intent.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
                 initUsbConnection()
-            } else if (intent.action == UsbManager.ACTION_USB_ACCESSORY_DETACHED) {
+            } else if (intent.action == UsbManager.ACTION_USB_DEVICE_DETACHED) {
                 disconnectUsbConnection()
             }
         }
@@ -149,13 +166,20 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("MutableImplicitPendingIntent")
     private fun initUsbConnection() {
         val usbDevices: HashMap<String, UsbDevice>? = usbManager.deviceList
+
         if (!usbDevices?.isEmpty()!!) {
+            Log.d(TAG, "USB devices recognized")
+            messages.add("Usb Devices recognized")
+            broadcastMsgAdapter.notifyDataSetChanged()
+
             var keep = true
             usbDevices.forEach { e ->
                 usbDevice = e.value
                 val deviceVendorId: Int? = usbDevice?.vendorId
                 Log.d(TAG, "vendorId: ${deviceVendorId}")
-                
+                messages.add("vendorId: ${deviceVendorId}")
+                broadcastMsgAdapter.notifyDataSetChanged()
+
                 if (deviceVendorId != null) {
                     val intent: PendingIntent =
                         PendingIntent.getBroadcast(
@@ -164,10 +188,14 @@ class MainActivity : ComponentActivity() {
                     usbManager.requestPermission(usbDevice, intent)
                     keep = false
                     Log.d(TAG, "connection successful")
+                    messages.add("connection successful")
+                    broadcastMsgAdapter.notifyDataSetChanged()
                 } else {
                     usbConnection = null
                     usbDevice = null
                     Log.d(TAG, "unable to connect")
+                    messages.add("unable to connect")
+                    broadcastMsgAdapter.notifyDataSetChanged()
                 }
 
                 if (!keep) {
@@ -176,12 +204,21 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             Log.d(TAG, "no usb device connected")
+            messages.add("no usb device connected")
+            broadcastMsgAdapter.notifyDataSetChanged()
         }
     }
 
-    private fun sendDate(input: String) {
-        usbSerialDevice?.write(input.toByteArray())
-        Log.d(TAG, "sending data: ${input.toByteArray()}")
+    private fun sendData(input: String) {
+        lifecycleScope.launch {
+            while (true) {
+                usbSerialDevice?.write(input.toByteArray())
+                Log.d(TAG, "sending data: ${input.toByteArray()}")
+                messages.add("sending data: ${input.toByteArray()}")
+                broadcastMsgAdapter.notifyDataSetChanged()
+                delay(5000)
+            }
+        }
     }
 
     private fun disconnectUsbConnection() {
