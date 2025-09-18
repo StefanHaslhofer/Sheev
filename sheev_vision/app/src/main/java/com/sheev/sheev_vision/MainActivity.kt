@@ -39,7 +39,6 @@ import com.sheev.sheev_vision.detection.LandmarkOverlayView
 import com.sheev.sheev_vision.detection.ObjectDetectorProcessor
 import com.sheev.sheev_vision.udp.UdpSocketListener
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ExecutorService
@@ -94,7 +93,6 @@ class MainActivity : ComponentActivity() {
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED)
         registerReceiver(broadcastReceiver, filter)
         initUsbConnection()
-        sendData("0")
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
@@ -117,6 +115,14 @@ class MainActivity : ComponentActivity() {
         broadcastMsgAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, messages)
         val listView: ListView = findViewById(R.id.broadcast_msg_view)
         listView.adapter = broadcastMsgAdapter
+    }
+
+    fun sendData(input: String) {
+        if (usbSerialDevice != null) {
+            lifecycleScope.launch {
+                usbSerialDevice?.write(input.toByteArray())
+            }
+        }
     }
 
     // Source: https://github.com/appsinthesky/Kotlin-Serial-Usb
@@ -204,20 +210,6 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             Log.d(TAG, "no usb device connected")
-            messages.add("no usb device connected")
-            broadcastMsgAdapter.notifyDataSetChanged()
-        }
-    }
-
-    private fun sendData(input: String) {
-        lifecycleScope.launch {
-            while (true) {
-                usbSerialDevice?.write(input.toByteArray())
-                Log.d(TAG, "sending data: ${input.toByteArray()}")
-                messages.add("sending data: ${input.toByteArray()}")
-                broadcastMsgAdapter.notifyDataSetChanged()
-                delay(5000)
-            }
         }
     }
 
@@ -263,7 +255,8 @@ class MainActivity : ComponentActivity() {
                         ObjectDetectorProcessor(
                             options,
                             landmarkOverlayView,
-                            actionBorderOverlayView
+                            actionBorderOverlayView,
+                            ::sendData
                         )
                     )
                 }

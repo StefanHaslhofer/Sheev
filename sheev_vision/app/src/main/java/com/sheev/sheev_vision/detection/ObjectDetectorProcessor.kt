@@ -17,6 +17,7 @@ class ObjectDetectorProcessor(
     options: PoseDetectorOptionsBase,
     private val landmarkOverlayView: LandmarkOverlayView,
     private val actionBorderOverlayView: ActionBorderOverlayView,
+    private val sendData: (String) -> Unit
 ) : ImageAnalysis.Analyzer {
 
     var positionIndicator = 1
@@ -40,7 +41,8 @@ class ObjectDetectorProcessor(
                     Log.d(TAG, positionIndicator.toString())
                     imageProxy.close()
 
-                    // TODO send positionIndicator to arduino
+                    // 📬 send positionIndicator to arduino
+                    sendData(positionIndicator.toString())
                 }
                 .addOnFailureListener { e ->
                     Log.e(TAG, e.toString())
