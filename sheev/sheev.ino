@@ -50,7 +50,7 @@ void setup(){
   Wire.begin();
   Wire.setClock(400000);
 
-  move(FW); // start in forward movement
+  move(HL); // start in forward movement
 
   // servo setup
   servo1.write(SERVO_FW_POS);
@@ -60,42 +60,61 @@ void setup(){
 }
 
 void loop(){
-  drive_vehicle();
+  delay(2);
+  char incomingByte = '1';
 
-  delay(20);
+  while (Serial.available()) {  
+    incomingByte = Serial.read();
+  }
+
+  drive_vehicle(incomingByte);
 }
 
 /**
  * state management of vehicle driving direction
  */
-void drive_vehicle() {
-  uint32_t dist; // distance to obstacle
-
-  while((dist = read_distance()) > STOP_DIST) {
-    Serial.print("Move forward: "); Serial.println(dist);
-    if (currDriveDir != FW) {
-      move(FW);
-    }
+void drive_vehicle(char incomingByte) {
+  uint32_t dist = read_distance(); // distance to obstacle
+  
+  Serial.println(dist);
+  // Ignore false sensor readings where distance is 0 to avoid incorrect movement adjustments.
+  // In such cases, retain the current movement state and return early.
+  if (dist <= 0) {
+    return;
   }
 
-  if (currDriveDir == FW) {
+  if(dist > STOP_DIST && currDriveDir == FW && incomingByte == '1') {
+    Serial.print("Move forward: "); Serial.println(dist);
+    move(FW);
+    return;
+  }
+
+  if(dist <= STOP_DIST && currDriveDir == FW) {
     move(HL); // halt vehicle
-    delay(500);
+    delay(250);  
     rn = random(10); // set random turn direction if forward movement stops 
   }
 
-  while((dist = read_distance()) < GO_DIST && dist > 0) {
-    delay(250);
-    if (rn > 4) {
-        move(RT);
-        Serial.print("Turn right: "); Serial.println(dist);
-    } else {
-        move(LT);
-        Serial.print("Turn left: "); Serial.println(dist);
-    }
-    delay(turnDuration);
-    move(HL);
+  if(incomingByte == '0' || (rn <= 4 && dist <= GO_DIST)) {
+    Serial.print("Turn left: "); Serial.println(dist);
+    move(LT);
+    return;
   }
+
+  if(incomingByte == '1' && dist > GO_DIST) {
+    Serial.print("Move forward: "); Serial.println(dist);
+    move(FW);
+    return;
+  }
+
+  if(incomingByte == '2' || (rn > 4 && dist <= GO_DIST)) {
+    Serial.print("Turn right: "); Serial.println(dist);
+    move(RT);
+    return;
+  }
+
+  // delay(turnDuration);
+  // move(HL);
 }
 
 /**
