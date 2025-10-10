@@ -10,8 +10,8 @@
 #define STOP_DIST 200 // allowed min distance to obstacle (in mm)
 #define GO_DIST 250 // distance threshold needed to return to forward movement
 
-#define MOTOR_SPEED 100
-#define STANDARD_TRN_DUR 750 // turn duration in ms at MOTOR_SPEED = 100
+#define MOTOR_SPEED 80
+#define STANDARD_TRN_DUR 1000 // turn duration in ms at MOTOR_SPEED = 100
 
 #define DEBUG_MSG false
 

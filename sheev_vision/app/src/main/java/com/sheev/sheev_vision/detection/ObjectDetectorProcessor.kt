@@ -56,18 +56,18 @@ class ObjectDetectorProcessor(
      * Determine the position of a detected body relative to defined boundaries.
      *
      * @return Position indicator:
-     *   - 0 if the detected body is to the left of the left boundary
+     *   - 0 if the detected body is to the right of the right boundary
      *   - 1 if the detected body is within the boundaries
-     *   - 2 if the detected body is to the right of the right boundary
+     *   - 2 if the detected body is to the left of the left boundary
      */
     private fun checkBoundaries(poseLandmarks: List<LandmarkOverlayView.PoseLandmark>): Int {
         for (pl in poseLandmarks) {
             if (pl.y > actionBorderOverlayView.leftBorder.endY) {
-                return 0
+                return 2
             }
 
             if (pl.y < actionBorderOverlayView.rightBorder.endY) {
-                return 2
+                return 0
             }
 
             if (positionIndicator == 0 && pl.y < actionBorderOverlayView.leftInnerBorder.endY ||
