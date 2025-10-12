@@ -9,28 +9,20 @@ import android.view.View
 class ActionBorderOverlayView(context: Context) : View(context) {
     lateinit var leftBorder: ActionBorder
     lateinit var rightBorder: ActionBorder
-    lateinit var leftInnerBorder: ActionBorder
-    lateinit var rightInnerBorder: ActionBorder
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         drawActionBorders(canvas, leftBorder, PAINT)
         drawActionBorders(canvas, rightBorder, PAINT)
-        drawActionBorders(canvas, leftInnerBorder, PAINT_INNER)
-        drawActionBorders(canvas, rightInnerBorder, PAINT_INNER)
     }
 
     fun setBorders(
         leftBorder: ActionBorder,
-        rightBorder: ActionBorder,
-        leftInnerBorder: ActionBorder,
-        rightInnerBorder: ActionBorder
+        rightBorder: ActionBorder
     ) {
         this.leftBorder = leftBorder
         this.rightBorder = rightBorder
-        this.leftInnerBorder = leftInnerBorder
-        this.rightInnerBorder = rightInnerBorder
         invalidate()
     }
 

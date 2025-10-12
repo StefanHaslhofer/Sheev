@@ -280,27 +280,12 @@ class MainActivity : ComponentActivity() {
     private fun initActionBorders(prevHeight: Float, prevWidth: Float) {
         val leftBorder = ActionBorder(
             0f,
-            prevHeight / 5 * 4,
-            prevWidth,
-            prevHeight / 5 * 4
-        )
-
-        val rightBorder =
-            ActionBorder(
-                0f,
-                prevHeight / 5,
-                prevWidth,
-                prevHeight / 5
-            )
-
-        val leftInnerBorder = ActionBorder(
-            0f,
             prevHeight / 5 * 3,
             prevWidth,
             prevHeight / 5 * 3
         )
 
-        val rightInnerBorder =
+        val rightBorder =
             ActionBorder(
                 0f,
                 prevHeight / 5 * 2,
@@ -310,9 +295,7 @@ class MainActivity : ComponentActivity() {
 
         actionBorderOverlayView.setBorders(
             leftBorder,
-            rightBorder,
-            leftInnerBorder,
-            rightInnerBorder
+            rightBorder
         )
     }
 
