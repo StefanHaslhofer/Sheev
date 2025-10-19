@@ -10,10 +10,10 @@
 #define STOP_DIST 200 // allowed min distance to obstacle (in mm)
 #define GO_DIST 250 // distance threshold needed to return to forward movement
 
-#define MOTOR_SPEED 80
-#define STANDARD_TRN_DUR 1000 // turn duration in ms at MOTOR_SPEED = 100
+#define MOTOR_SPEED 125
+#define TURN_DURATION 50
 
-#define DEBUG_MSG false
+#define DEBUG_MSG true
 
 #define SERVO_FW_POS 75
 #define SERVO_START_POS 20
@@ -36,7 +36,8 @@ enum DriveDirection {
 
 DriveDirection currDriveDir = HL;
 long rn;
-int turnDuration;
+int pos = 0;
+uint32_t minDist = UINT32_MAX;
 
 void setup(){
   Serial.begin(9600);
@@ -50,18 +51,26 @@ void setup(){
   Wire.begin();
   Wire.setClock(400000);
 
-  move(HL); // start in forward movement
+  move(HL, 0); // start in forward movement
 
   // servo setup
   servo1.write(SERVO_FW_POS);
   servo1.attach(10);
-
-  turnDuration = 100/MOTOR_SPEED*STANDARD_TRN_DUR;
 }
 
 void loop(){
   delay(2);
-  char incomingByte = '1';
+  char incomingByte;
+
+  if (pos >= SERVO_RANGE) {
+    minDist = UINT32_MAX;
+    pos = SERVO_START_POS;
+    servo1.write(pos);   // set servo to initial position
+    delay(15);           // waits 15ms for the servo to reach the position
+  }
+
+  servo1.write(pos+=3);
+  delay (5);
 
   while (Serial.available()) {  
     incomingByte = Serial.read();
@@ -74,88 +83,75 @@ void loop(){
  * state management of vehicle driving direction
  */
 void drive_vehicle(char incomingByte) {
-  uint32_t dist = read_distance(); // distance to obstacle
-  
-  Serial.println(dist);
-  // Ignore false sensor readings where distance is 0 to avoid incorrect movement adjustments.
-  // In such cases, retain the current movement state and return early.
-  if (dist <= 0) {
+  uint32_t dist = I2C_read_distance(); // distance to obstacle
+
+  if(dist > 0 && dist < minDist) {
+    minDist = dist;
+  }
+
+  // TODO: Actively look for person when noone is insight -> currently out of scope 
+  if (incomingByte == '3' && minDist > GO_DIST) {
+    #if DEBUG_MSG
+      Serial.print("Stop: "); Serial.println(dist);
+    #endif
+    move(HL, 0);
     return;
   }
 
-  if(dist > STOP_DIST && currDriveDir == FW && incomingByte == '1') {
-    Serial.print("Move forward: "); Serial.println(dist);
-    move(FW);
-    return;
-  }
-
-  if(dist <= STOP_DIST && currDriveDir == FW) {
-    move(HL); // halt vehicle
+  if(minDist <= STOP_DIST && currDriveDir == FW) {
+    #if DEBUG_MSG
+      Serial.print("Stop: "); Serial.println(dist);
+    #endif
+    move(HL, 0);
     delay(250);  
     rn = random(10); // set random turn direction if forward movement stops 
   }
 
-  if(incomingByte == '0' || (rn <= 4 && dist <= GO_DIST)) {
-    Serial.print("Turn left: "); Serial.println(dist);
-    move(LT);
-    return;
-  }
+  if(incomingByte == '0' || (rn <= 4 && minDist <= GO_DIST)) {
+    #if DEBUG_MSG
+      Serial.print("Turn left: "); Serial.println(dist);
+    #endif
+    move(LT, 160);
+    delay(TURN_DURATION);
 
-  if(incomingByte == '1' && dist > GO_DIST) {
-    Serial.print("Move forward: "); Serial.println(dist);
-    move(FW);
-    return;
-  }
-
-  if(incomingByte == '2' || (rn > 4 && dist <= GO_DIST)) {
-    Serial.print("Turn right: "); Serial.println(dist);
-    move(RT);
-    return;
-  }
-
-  // delay(turnDuration);
-  // move(HL);
-}
-
-/**
- * return distance to obstacle
- */
-uint32_t read_distance() {
-  uint32_t dist = 0;
-  uint32_t minDist = UINT32_MAX;
-  int pos = 0;
-
-  // perform a forward sweep to determine the minimum distance within a wide angle range
-  for (pos = SERVO_START_POS; pos <= SERVO_RANGE; pos += 1) {
-    // in steps of 1 degree
-    servo1.write(pos);              // tell servo to go to position
-    delay(3);                       // waits 15ms for the servo to reach the position
-  }
-
-  for (pos = SERVO_RANGE; pos >= SERVO_START_POS; pos -= 1) {
-    servo1.write(pos);
-    delay(5);
-    dist = I2C_read_distance();
-
-    if (dist < GO_DIST || dist < STOP_DIST && currDriveDir != FW) {
-      return dist;
+    if (minDist <= GO_DIST) {
+      move(HL, 0);
     }
 
-    if(minDist == 0 || dist < minDist) {
-      minDist = dist;
-    } 
+    return;
   }
 
-  return minDist;
+  if(incomingByte == '1' && minDist > GO_DIST) {
+    #if DEBUG_MSG
+      Serial.print("Move forward: "); Serial.println(dist);
+    #endif
+    move(FW, 125);
+    return;
+  }
+
+  if(incomingByte == '2' || (rn > 4 && minDist <= GO_DIST)) {
+    #if DEBUG_MSG
+      Serial.print("Turn right: "); Serial.println(dist);
+    #endif
+    move(RT, 160);
+    delay(TURN_DURATION);
+
+    if (minDist <= GO_DIST) {
+      move(HL, 0);
+    }
+
+    return;
+  }
 }
 
 /*
  * change motor directions based on driving action
  */
-void move(DriveDirection direction) {
-    #if DEBUG_MSG
-      Serial.println(direction);
-    #endif
+void move(DriveDirection direction, uint8_t speed) {
+    m1.setSpeed(speed);
+    m2.setSpeed(speed);
+    m3.setSpeed(speed);
+    m4.setSpeed(speed);
 
     currDriveDir = direction;
 
