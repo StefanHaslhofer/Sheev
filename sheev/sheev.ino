@@ -13,7 +13,7 @@
 #define MOTOR_SPEED 125
 #define TURN_DURATION 50
 
-#define DEBUG_MSG true
+#define DEBUG_MSG false
 
 #define SERVO_FW_POS 75
 #define SERVO_START_POS 20
@@ -60,7 +60,7 @@ void setup(){
 
 void loop(){
   delay(2);
-  char incomingByte;
+  char incomingByte = '\0';
 
   if (pos >= SERVO_RANGE) {
     minDist = UINT32_MAX;
@@ -69,11 +69,13 @@ void loop(){
     delay(15);           // waits 15ms for the servo to reach the position
   }
 
-  servo1.write(pos+=3);
-  delay (5);
-
   while (Serial.available()) {  
     incomingByte = Serial.read();
+  }
+
+  if (incomingByte != '\0') {
+    servo1.write(pos+=3);
+    delay (5);
   }
 
   drive_vehicle(incomingByte);

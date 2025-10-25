@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
     private var usbDevice: UsbDevice? = null
     private var usbSerialDevice: UsbSerialDevice? = null
     private var usbConnection: UsbDeviceConnection? = null
+    private var isActive = false
 
     private var messages = mutableListOf<String>()
 
@@ -108,7 +109,7 @@ class MainActivity : ComponentActivity() {
         view.addView(actionBorderOverlayView)
 
         // 👂 Listen for UDP broadcasts
-        // startListening()
+        startListening()
 
         startCamera()
 
@@ -120,7 +121,9 @@ class MainActivity : ComponentActivity() {
     fun sendData(input: String) {
         if (usbSerialDevice != null) {
             lifecycleScope.launch {
-                usbSerialDevice?.write(input.toByteArray())
+                if (isActive) {
+                    usbSerialDevice?.write(input.toByteArray())
+                }
             }
         }
     }
@@ -312,8 +315,15 @@ class MainActivity : ComponentActivity() {
                 // Automatically back on main thread
                 if (m != null) {
                     Log.d(TAG, "new UDP message: $m")
+                    if (m.contains("opened")) {
+                        isActive = true
+                    } else if (m.contains("closed")) {
+                        isActive = false
+                    }
+
+                    messages.add(m)
+                    broadcastMsgAdapter.notifyDataSetChanged()
                 }
-                // broadcastMsgAdapter.notifyDataSetChanged()
             }
         }
     }

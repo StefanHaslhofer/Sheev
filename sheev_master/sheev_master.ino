@@ -3,7 +3,7 @@
 
 #define DOOR_PIN D7  // pin connected to door sensor's pin
 
-#define DEBUG_MSG true
+#define DEBUG_MSG false
 
 const char* ssid     = "Des Kaisers Richtfunk";
 const char* password = "GottbewahredenKaiser";
