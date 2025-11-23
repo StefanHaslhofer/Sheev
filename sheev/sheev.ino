@@ -220,7 +220,7 @@ uint32_t I2C_read_distance()
     uint8_t read_buf[256];
 
     // UNO R3 cannot read all the data at once, so it reads the data twice
-    read_bytes(0x00, read_buf, REGISTER_TOTAL_SIZE); // read first half of the sensor data
+    read_bytes(0x00, read_buf, REGISTER_TOTAL_SIZE/2); // read first half of the sensor data
     read_bytes(REGISTER_TOTAL_SIZE/2, &read_buf[REGISTER_TOTAL_SIZE/2], REGISTER_TOTAL_SIZE/2); // read second half of the sensor data
 
     // distance output by the TOF module according to spec
